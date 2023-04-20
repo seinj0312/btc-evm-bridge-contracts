@@ -7,14 +7,7 @@ const REGULAR_CHAIN = require('./test_fixtures/headers.json');
 const RETARGET_CHAIN = require('./test_fixtures/headersWithRetarget.json');
 const REORG_AND_RETARGET_CHAIN = require('./test_fixtures/headersReorgAndRetarget.json');
 
-// const BitcoinRelay = artifacts.require("BitcoinRelay");
 import { assert, expect, use } from "chai";
-// const truffleAssert = require('truffle-assertions');
-const {BitcoinRESTAPI} = require('bitcoin_rest_api');
-const {baseURLMainnet} = require('bitcoin_rest_api');
-const {baseURLTestnet} = require('bitcoin_rest_api');
-const {networkMainnet} = require('bitcoin_rest_api');
-const {networkTestnet} = require('bitcoin_rest_api');
 const fs = require('fs');
 var path = require('path');
 var jsonPath = path.join(__dirname, './test_fixtures', 'testBlockHeaders.json');
@@ -26,6 +19,7 @@ import { BitcoinRelay } from "../src/types/BitcoinRelay";
 import {BitcoinRelay__factory } from "../src/types/factories/BitcoinRelay__factory";
 import { deployMockContract, MockContract } from "@ethereum-waffle/mock-contract";
 import { takeSnapshot, revertProvider } from "./block_utils";
+import { BitcoinInterface } from '@teleportdao/bitcoin';
 
 function revertBytes32(input: any) {
     let output = input.match(/[a-fA-F0-9]{2}/g).reverse().join('')
@@ -46,7 +40,7 @@ describe("Bitcoin Relay", async () => {
     let signer3: Signer;
 
     let ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
-    let bitcoinRESTAPI: any;
+    let bitcoinInterface: any;
     let blockHeaders: any;
 
     let mockTDT: MockContract;
@@ -61,7 +55,21 @@ describe("Bitcoin Relay", async () => {
             deployer
         );
 
-        bitcoinRESTAPI = new BitcoinRESTAPI(networkMainnet, baseURLMainnet, 2);
+        const networkName =  'bitcoin';
+        const _bitcoinNetwork = {
+            name: networkName,
+            connection: {
+                api: {
+                enabled: true,
+                provider: 'BlockStream',
+                token: null,
+                },
+            },
+        };
+        bitcoinInterface = new BitcoinInterface(
+            _bitcoinNetwork.connection,
+            _bitcoinNetwork.name
+        );
 
         // read block headers from file
         let data = fs.readFileSync(jsonPath, 'utf-8');
@@ -69,12 +77,12 @@ describe("Bitcoin Relay", async () => {
 
         bitcoinRelay = await deployBitcoinRelay();
 
-        const TDTcontract = await deployments.getArtifact(
-            "contracts/erc20/interfaces/ITeleBTC.sol:ITeleBTC"
+        const erc20Contract = await deployments.getArtifact(
+            "contracts/erc20/erc20.sol:erc20"
         );
         mockTDT = await deployMockContract(
             deployer,
-            TDTcontract.abi
+            erc20Contract.abi
         )
 
     });
@@ -96,8 +104,8 @@ describe("Bitcoin Relay", async () => {
 
         let _height = _genesisHeight;
         let _heightBigNumber = BigNumber.from(_genesisHeight)
-        let _genesisHeader = await bitcoinRESTAPI.getHexBlockHeader(_genesisHeight);
-        let _periodStart = await bitcoinRESTAPI.getHexBlockHash(_height - (_height % 2016));
+        let _genesisHeader = await bitcoinInterface.getBlockHeaderHex(_genesisHeight);
+        let _periodStart = await bitcoinInterface.getBlockHash(_height - (_height % 2016));
         _genesisHeader = '0x' + _genesisHeader;
         _periodStart = '0x' + revertBytes32(_periodStart);
 
@@ -225,7 +233,7 @@ describe("Bitcoin Relay", async () => {
 
         it('submit a block header with new target (addHeaders => unsuccessful)', async () => {
             let blockHeaderOld = blockHeaders[2015];
-            let blockHeaderNew = await bitcoinRESTAPI.getHexBlockHeader(100*2016);
+            let blockHeaderNew = await bitcoinInterface.getBlockHeaderHex(100*2016);
             blockHeaderOld = '0x' + blockHeaderOld;
             blockHeaderNew = '0x' + blockHeaderNew;
 
@@ -240,7 +248,7 @@ describe("Bitcoin Relay", async () => {
 
         it('submit a block header with new target', async () => {
             let newHeight = BigNumber.from(100*2016);
-            let blockHeaderNew = await bitcoinRESTAPI.getHexBlockHeader(newHeight); // this is the new block header
+            let blockHeaderNew = await bitcoinInterface.getBlockHeaderHex(newHeight); // this is the new block header
         
             blockHeaderNew = '0x' + blockHeaderNew;
             let oldPeriodStartHeader = '0x' + blockHeaders[0];
@@ -255,7 +263,7 @@ describe("Bitcoin Relay", async () => {
                 )
             ).to.emit(bitcoinRelay, "BlockAdded")
 
-            let blockHeaderNext = await bitcoinRESTAPI.getHexBlockHeader(newHeight.add(1))
+            let blockHeaderNext = await bitcoinInterface.getBlockHeaderHex(newHeight.add(1))
             let currentHash = '0x' + blockHeaderNext.slice(8, 72);
     
             // Hash of the block is stored

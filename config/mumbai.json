@@ -1,4 +1,5 @@
 {
   "bitcoin_network": "testnet",
-  "treasury": "0x5364E3557572bd5D5903C0e9C21BE359F2Eac1dA"
+  "treasury": "0x5364E3557572bd5D5903C0e9C21BE359F2Eac1dA",
+  "tdt_token": "0x167d89a98f1e2f0fa908395beea3be66b3c60a0d"
 }
