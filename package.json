@@ -1,8 +1,18 @@
 {
 	"name": "@teleportdao/btc-evm-bridge",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"description": "Light client bridge for Bitcoin",
 	"license": "MIT",
+	"scripts": {
+		"build": "hardhat compile && tsc",
+		"clean": "rimraf artifacts && rimraf cache && rimraf deployments/localhost && rimraf src/types/*",
+		"prepare": "husky install",
+		"deploy:local": "hardhat deploy --network hardhat --tags BitcoinMainnet --export export/abi/local.json",
+		"deploy:polygon": "NODE_ENV=polygon hardhat deploy --network polygon --export export/abi/polygon.json",
+		"deploy:mumbai": "NODE_ENV=mumbai hardhat deploy --network mumbai --export export/abi/mumbai.json",
+		"test": "hardhat test",
+		"lint": "commitlint --from=HEAD"
+	},
 	"devDependencies": {
 		"@commitlint/cli": "^17.4.4",
 		"@commitlint/config-conventional": "^17.4.4",
@@ -46,15 +56,5 @@
 		"@openzeppelin/contracts": "4.3.3",
 		"@teleportdao/bitcoin": "^1.1.5-alpha.3",
 		"config": "^3.3.6"
-	},
-	"scripts": {
-		"build": "hardhat compile && tsc",
-		"clean": "rimraf artifacts && rimraf cache && rimraf deployments/localhost && rimraf src/types/*",
-		"prepare": "husky install",
-		"deploy:local": "hardhat deploy --network hardhat --tags BitcoinMainnet --export export/abi/local.json",
-		"deploy:polygon": "NODE_ENV=polygon hardhat deploy --network polygon --export export/abi/polygon.json",
-		"deploy:mumbai": "NODE_ENV=mumbai hardhat deploy --network mumbai --export export/abi/mumbai.json",
-		"test": "hardhat test",
-		"lint": "commitlint --from=HEAD"
 	}
 }
