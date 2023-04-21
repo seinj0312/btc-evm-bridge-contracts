@@ -41,17 +41,3 @@ You can run the full test suite with the following command:
 You can deploy the contracts on networks specified in package.json with the following command:
 
 `yarn deploy:network`
-
-## Set Variables
-
-After deployment, certain variables need to be set using the following commands:
-
-`yarn settlement:network` & `yarn collateral_pool_scripts:network`
-
- Run the below command with a different private key:
-
-`yarn lockers_settlement:network`
-
-If a contract address has been changed, update the address in other contracts by the following command:
-
-`yarn global_variables_settlement:network`
