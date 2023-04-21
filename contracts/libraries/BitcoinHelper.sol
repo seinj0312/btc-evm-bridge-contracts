@@ -252,9 +252,13 @@ library BitcoinHelper {
         bytes29 output = indexVout(voutView, _voutIndex);
         bytes29 _scriptPubkey = scriptPubkey(output);
 
-        if (_scriptType == ScriptTypes.P2PK) {
+        if (_scriptType == ScriptTypes.P2TR) {
+            // note: first two bytes are OP_1 and Pushdata Bytelength.  
+            // note: script hash length is 32.          
+            bitcoinAmount = keccak256(_script) == keccak256(abi.encodePacked(_scriptPubkey.index(2, 32))) ? value(output) : 0;
+        } else if (_scriptType == ScriptTypes.P2PK) {
             // note: first byte is Pushdata Bytelength. 
-            // note: public key length is 32.           
+            // note: public key length is 32.          
             bitcoinAmount = keccak256(_script) == keccak256(abi.encodePacked(_scriptPubkey.index(1, 32))) ? value(output) : 0;
         } else if (_scriptType == ScriptTypes.P2PKH) { 
             // note: first three bytes are OP_DUP, OP_HASH160, Pushdata Bytelength. 
