@@ -1,16 +1,16 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy/types';
+import { BitcoinInterface } from '@teleportdao/bitcoin';
 import config from 'config';
 import verify from "../helper-functions";
-import { BitcoinInterface } from '@teleportdao/bitcoin';
 
 var path = require('path');
 var fs = require('fs');
 var tempFilePath = path.join(__dirname, '..', '.env');
 
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-    const {deployments, getNamedAccounts, network} = hre;
-    const {deploy} = deployments;
+    const { deployments, getNamedAccounts, network } = hre;
+    const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
 
     let bitcoinNetwork = config.get("bitcoin_network");
@@ -21,9 +21,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         name: networkName,
         connection: {
             api: {
-            enabled: true,
-            provider: 'BlockStream',
-            token: null,
+                enabled: true,
+                provider: 'BlockStream',
+                token: null,
             },
         },
     };
@@ -43,10 +43,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     }
 
     let genesisHeader = await bitcoinInterface.getBlockHeaderHex(height);
-    let periodStartHeight = height - height%2016;
-    let periodStart = await bitcoinInterface.getBlockHeaderHex(periodStartHeight);
+    let periodStartHeight = height - height % 2016;
+    let periodStart = await bitcoinInterface.getBlockHash(periodStartHeight);
     periodStart = Buffer.from(periodStart , 'hex').reverse().toString('hex');
-
+    
     var blockHeight = "BLOCK_HEIGHT=" + height + "\n";
     fs.appendFileSync(tempFilePath, blockHeight);
 
@@ -61,7 +61,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
                 '0x' + genesisHeader,
                 height,
                 '0x' + periodStart,
-                tdtToken.address
+                tdtToken
             ],
         });
     } else {
@@ -73,7 +73,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
                 '0x' + genesisHeader,
                 height,
                 '0x' + periodStart,
-                tdtToken.address
+                tdtToken
             ],
         });
     }
@@ -84,7 +84,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         let height = Number(theBlockHeight)
         let genesisHeader = await bitcoinInterface.getBlockHeaderHex(height);
         let periodStartHeight = height - height%2016;
-        let periodStart = await bitcoinInterface.getBlockHeaderHex(periodStartHeight);
+        let periodStart = await bitcoinInterface.getBlockHash(periodStartHeight);
         periodStart = Buffer.from(periodStart , 'hex').reverse().toString('hex');
 
         if (bitcoinNetwork == "mainnet") {
@@ -92,14 +92,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
                 '0x' + genesisHeader,
                 height,
                 '0x' + periodStart,
-                tdtToken.address
+                tdtToken
             ], "contracts/relay/BitcoinRelay.sol:BitcoinRelay")
         } else {
             await verify(deployedContract.address, [
                 '0x' + genesisHeader,
                 height,
                 '0x' + periodStart,
-                tdtToken.address
+                tdtToken
             ], "contracts/relay/BitcoinRelayTestnet.sol:BitcoinRelayTestnet")
         }
         

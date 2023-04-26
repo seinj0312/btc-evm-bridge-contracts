@@ -88,10 +88,10 @@ const config: HardhatUserConfig = {
 			6283185
 		),
 		polygon: {
-			url: "https://rpc-mainnet.maticvigil.com/",
+			url: "https://polygon-rpc.com",
 			chainId: 137,
 			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
-			gasPrice: 180000000000 
+			gasPrice: 400000000000 
 		},
 		mumbai: {
 			url: "https://rpc-mumbai.maticvigil.com",

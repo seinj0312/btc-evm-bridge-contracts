@@ -1,13 +1,13 @@
 {
 	"name": "@teleportdao/btc-evm-bridge",
-	"version": "0.0.3",
+	"version": "1.0.1",
 	"description": "Light client bridge for Bitcoin",
 	"license": "MIT",
 	"scripts": {
 		"build": "hardhat compile && tsc",
 		"clean": "rimraf artifacts && rimraf cache && rimraf deployments/localhost && rimraf src/types/*",
 		"prepare": "husky install",
-		"deploy:local": "hardhat deploy --network hardhat --tags BitcoinMainnet --export export/abi/local.json",
+		"deploy:local": "hardhat deploy --network hardhat --export export/abi/local.json",
 		"deploy:polygon": "NODE_ENV=polygon hardhat deploy --network polygon --export export/abi/polygon.json",
 		"deploy:mumbai": "NODE_ENV=mumbai hardhat deploy --network mumbai --export export/abi/mumbai.json",
 		"test": "hardhat test",
