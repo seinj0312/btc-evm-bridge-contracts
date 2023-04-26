@@ -7,14 +7,7 @@ const REGULAR_CHAIN = require('./test_fixtures/headers.json');
 const RETARGET_CHAIN = require('./test_fixtures/headersWithRetarget.json');
 const REORG_AND_RETARGET_CHAIN = require('./test_fixtures/headersReorgAndRetarget.json');
 
-// const BitcoinRelay = artifacts.require("BitcoinRelay");
 import { assert, expect, use } from "chai";
-// const truffleAssert = require('truffle-assertions');
-const {BitcoinRESTAPI} = require('bitcoin_rest_api');
-const {baseURLMainnet} = require('bitcoin_rest_api');
-const {baseURLTestnet} = require('bitcoin_rest_api');
-const {networkMainnet} = require('bitcoin_rest_api');
-const {networkTestnet} = require('bitcoin_rest_api');
 const fs = require('fs');
 var path = require('path');
 var jsonPath = path.join(__dirname, './test_fixtures', 'testBlockHeaders.json');
@@ -26,6 +19,7 @@ import { BitcoinRelay } from "../src/types/BitcoinRelay";
 import {BitcoinRelay__factory } from "../src/types/factories/BitcoinRelay__factory";
 import { deployMockContract, MockContract } from "@ethereum-waffle/mock-contract";
 import { takeSnapshot, revertProvider } from "./block_utils";
+import { BitcoinInterface } from '@teleportdao/bitcoin';
 
 function revertBytes32(input: any) {
     let output = input.match(/[a-fA-F0-9]{2}/g).reverse().join('')
@@ -46,7 +40,7 @@ describe("Bitcoin Relay", async () => {
     let signer3: Signer;
 
     let ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
-    let bitcoinRESTAPI: any;
+    let bitcoinInterface: any;
     let blockHeaders: any;
 
     let mockTDT: MockContract;
@@ -61,7 +55,21 @@ describe("Bitcoin Relay", async () => {
             deployer
         );
 
-        bitcoinRESTAPI = new BitcoinRESTAPI(networkMainnet, baseURLMainnet, 2);
+        const networkName =  'bitcoin';
+        const _bitcoinNetwork = {
+            name: networkName,
+            connection: {
+                api: {
+                enabled: true,
+                provider: 'BlockStream',
+                token: null,
+                },
+            },
+        };
+        bitcoinInterface = new BitcoinInterface(
+            _bitcoinNetwork.connection,
+            _bitcoinNetwork.name
+        );
 
         // read block headers from file
         let data = fs.readFileSync(jsonPath, 'utf-8');
@@ -69,12 +77,12 @@ describe("Bitcoin Relay", async () => {
 
         bitcoinRelay = await deployBitcoinRelay();
 
-        const TDTcontract = await deployments.getArtifact(
-            "contracts/erc20/interfaces/ITeleBTC.sol:ITeleBTC"
+        const erc20Contract = await deployments.getArtifact(
+            "contracts/erc20/erc20.sol:erc20"
         );
         mockTDT = await deployMockContract(
             deployer,
-            TDTcontract.abi
+            erc20Contract.abi
         )
 
     });
@@ -96,8 +104,8 @@ describe("Bitcoin Relay", async () => {
 
         let _height = _genesisHeight;
         let _heightBigNumber = BigNumber.from(_genesisHeight)
-        let _genesisHeader = await bitcoinRESTAPI.getHexBlockHeader(_genesisHeight);
-        let _periodStart = await bitcoinRESTAPI.getHexBlockHash(_height - (_height % 2016));
+        let _genesisHeader = await bitcoinInterface.getBlockHeaderHex(_genesisHeight);
+        let _periodStart = await bitcoinInterface.getBlockHash(_height - (_height % 2016));
         _genesisHeader = '0x' + _genesisHeader;
         _periodStart = '0x' + revertBytes32(_periodStart);
 
@@ -225,7 +233,7 @@ describe("Bitcoin Relay", async () => {
 
         it('submit a block header with new target (addHeaders => unsuccessful)', async () => {
             let blockHeaderOld = blockHeaders[2015];
-            let blockHeaderNew = await bitcoinRESTAPI.getHexBlockHeader(100*2016);
+            let blockHeaderNew = await bitcoinInterface.getBlockHeaderHex(100*2016);
             blockHeaderOld = '0x' + blockHeaderOld;
             blockHeaderNew = '0x' + blockHeaderNew;
 
@@ -240,7 +248,7 @@ describe("Bitcoin Relay", async () => {
 
         it('submit a block header with new target', async () => {
             let newHeight = BigNumber.from(100*2016);
-            let blockHeaderNew = await bitcoinRESTAPI.getHexBlockHeader(newHeight); // this is the new block header
+            let blockHeaderNew = await bitcoinInterface.getBlockHeaderHex(newHeight); // this is the new block header
         
             blockHeaderNew = '0x' + blockHeaderNew;
             let oldPeriodStartHeader = '0x' + blockHeaders[0];
@@ -255,7 +263,7 @@ describe("Bitcoin Relay", async () => {
                 )
             ).to.emit(bitcoinRelay, "BlockAdded")
 
-            let blockHeaderNext = await bitcoinRESTAPI.getHexBlockHeader(newHeight.add(1))
+            let blockHeaderNext = await bitcoinInterface.getBlockHeaderHex(newHeight.add(1))
             let currentHash = '0x' + blockHeaderNext.slice(8, 72);
     
             // Hash of the block is stored
@@ -705,32 +713,13 @@ describe("Bitcoin Relay", async () => {
                     genesis.digest_le,
                     ZERO_ADDRESS
                 )
-            ).to.revertedWith("BitcoinRelay: stop being dumb")
-        });
-
-        it('errors if the period start is in wrong byte order', async () => {
-
-            await expect(
-                bitcoinRelayFactory.deploy(
-                    genesis.hex,
-                    genesis.height,
-                    orphan_562630.digest,
-                    ZERO_ADDRESS
-                )
-            ).to.revertedWith("Hint: wrong byte order?")
+            ).to.revertedWith("BitcoinRelay: null block")
         });
 
         it('stores genesis block info', async () => {
 
             expect(
                 await instance.relayGenesisHash()
-            ).to.equal(genesis.digest_le)
-
-            expect(
-                await instance.findAncestor(
-                    genesis.digest_le,
-                    0
-                )
             ).to.equal(genesis.digest_le)
 
             expect(
@@ -808,6 +797,43 @@ describe("Bitcoin Relay", async () => {
             expect(
                 await instance.getBlockHeaderHash(chain[0].height, 0)
             ).to.equal(chain[0].digest_le)
+        });
+
+    });
+
+    describe('#getBlockHeaderHashContract', async () => {
+        /* eslint-disable-next-line camelcase */
+        const { chain, genesis, orphan_562630 } = REGULAR_CHAIN;
+
+        beforeEach(async () => {
+            instance = await bitcoinRelayFactory.deploy(
+                genesis.hex,
+                genesis.height,
+                orphan_562630.digest_le,
+                ZERO_ADDRESS
+            );
+        });
+
+        it('views the hash correctly', async () => {
+            const header = chain[0].hex;
+            expect(
+                await instance.addHeaders(genesis.hex, header)
+            ).to.emit(instance, "BlockAdded");
+            let neededFee = await instance.getBlockHeaderFee(chain[0].height, 0);
+            expect(
+                await instance.getBlockHeaderHashContract(chain[0].height, 0, {value: neededFee})
+            ).to.emit(instance, "NewQuery").withArgs(chain[0].digest_le, chain[0].height, 0)
+        });
+
+        it('reverts since paid fee is not enough', async () => {
+            const header = chain[0].hex;
+            expect(
+                await instance.addHeaders(genesis.hex, header)
+            ).to.emit(instance, "BlockAdded");
+            let neededFee = await instance.getBlockHeaderFee(chain[0].height, 0);
+            await expect(
+                instance.getBlockHeaderHashContract(chain[0].height, 0, {value: neededFee.sub(1)})
+            ).to.revertedWith("BitcoinRelay: fee is not enough");
         });
 
     });
@@ -982,7 +1008,7 @@ describe("Bitcoin Relay", async () => {
                     '0x00',
                     headers
                 )
-            ).to.revertedWith("BitcoinRelay: anchor must be 80 bytes")
+            ).to.revertedWith("BitcoinRelay: wrong len")
         });
 
         it('errors if it encounters a retarget on an external call', async () => {
@@ -1012,7 +1038,7 @@ describe("Bitcoin Relay", async () => {
                     genesis.hex,
                     badHeaders
                 )
-            ).to.revertedWith("BitcoinRelay: header array length must be divisible by 80")
+            ).to.revertedWith("BitcoinRelay: wrong len")
         });
 
         it('errors if a header work is too low', async () => {
@@ -1266,7 +1292,7 @@ describe("Bitcoin Relay", async () => {
                     lastHeader.hex,
                     headers
                 )
-            ).to.revertedWith("BitcoinRelay: bad args. Check header and array byte lengths.")
+            ).to.revertedWith("BitcoinRelay: wrong len")
 
         });
 
@@ -1378,99 +1404,6 @@ describe("Bitcoin Relay", async () => {
                 ).to.equal(height)
 
             }
-        });
-    });
-
-    describe('#findAncestor', async () => {
-        const { chain, genesis, chain_header_hex, oldPeriodStart } = REGULAR_CHAIN;
-        const headerHex = chain_header_hex;
-        const headers = utils.concatenateHexStrings(headerHex.slice(0, 6));
-
-        beforeEach(async () => {
-
-            instance2 = await bitcoinRelayFactory.deploy(
-                genesis.hex,
-                genesis.height,
-                // FIXME: must pass the first block of the block period (2016)
-                oldPeriodStart.digest_le,
-                ZERO_ADDRESS
-            );
-
-            await instance2.addHeaders(genesis.hex, headers);
-        });
-
-        it('errors on unknown blocks', async () => {
-
-            await expect(
-                instance2.findAncestor(`0x${'00'.repeat(32)}`, 3)
-            ).to.revertedWith("BitcoinRelay: unknown ancestor")
-
-        });
-
-        it('Finds known ancestors based on on offsets', async () => {
-            //  since there's only 6 blocks added
-            for (let i = 0; i < 6; i += 1) {
-                /* eslint-disable-next-line camelcase */
-                const { digest_le } = chain[i];
-                // console.log("i", i);
-                // console.log("chain[i]: ", chain[i]);
-
-                /* eslint-disable-next-line no-await-in-loop */
-                let res = await instance2.findAncestor(digest_le, 0);
-                expect(
-                    res
-                ).to.equal(digest_le)
-
-                // assert.equal(res, digest_le);
-
-                if (i > 0) {
-                    /* eslint-disable-next-line no-await-in-loop */
-                    res = await instance2.findAncestor(digest_le, 1);
-                    expect(
-                        res
-                    ).to.equal(chain[i - 1].digest_le)
-
-                    // assert.equal(res, chain[i - 1].digest_le);
-                }
-            }
-        });
-
-    });
-
-    describe('#isAncestor', async () => {
-        const { chain, genesis, chain_header_hex, oldPeriodStart } = REGULAR_CHAIN;
-        const headerHex = chain_header_hex;
-        const headers = utils.concatenateHexStrings(headerHex.slice(0, 6));
-
-        before(async () => {
-
-            instance = await bitcoinRelayFactory.deploy(
-                genesis.hex,
-                genesis.height,
-                oldPeriodStart.digest_le,
-                ZERO_ADDRESS
-            );
-            await instance.addHeaders(genesis.hex, headers);
-        });
-
-        it('returns false if it exceeds the limit', async () => {
-
-            expect(
-                await instance.isAncestor(
-                    genesis.digest_le, chain[3].digest_le, 1
-                )
-            ).to.equal(false);
-
-        });
-
-        it('finds the ancestor if within the limit', async () => {
-
-            expect(
-                await instance.isAncestor(
-                    genesis.digest_le, chain[3].digest_le, 5
-                )
-            ).to.equal(true);
-
         });
     });
 

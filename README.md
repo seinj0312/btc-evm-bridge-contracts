@@ -1,51 +1,43 @@
-# TeleportDAO Protocol V1
+# TeleportDAO Bitcoin<>EVM Bridge V1
 
-This repository contains the smart contracts for the TeleportDAO bridge, cross-chain transfer, and cross-chain exchange. The codes belong to connecting Bitcoin to EVM-based blockchains. The repository uses Hardhat as development environment for compilation, testing and deployment tasks.
+This repository contains the smart contracts for the TeleportDAO Bitcoin<>EVM bridge. The repository uses Hardhat as development environment for compilation, testing and deployment tasks.
 
-## What is Teleport?
+## What is TeleportDAO Bitcoin<>EVM Bridge?
 
-Teleport is a trustless and universal protocol that provides an infrastructure for developers to build cross-chain applications. In other words, Teleport helps blockchains communicate with each other. Applications on one blockchain can access the latest data on other blockchains using Teleport relay smart contract.
+TeleportDAO Bitcoin<>EVM Bridge is a trustless protocol that makes Bitcoin data accessible on EVM chains. This is achieved by implementing the Bitcoin light client as a smart contract. The bridge can be leveraged to build cross-chain dApps between Bitcoin<>EVMs.
 
 ## Documentation
 
 See the link below: 
-- [Documentation](https://docs.teleportdao.xyz/introduction/what-is-teleportdao)
+- [TeleportDAO documentation](https://docs.teleportdao.xyz/introduction/what-is-teleportdao)
+
+## Audits
+- [Quantstamp report](https://github.com/TeleportDAO/audits/blob/main/reports/Quantstamp-Bitcoin-EVM.pdf) (Feb 2023)
 
 ## Community
+- Follow us on [Twitter](https://twitter.com/Teleport_DAO).
+- Join our [discord channel](https://discord.com/invite/6RSsgfQgcb).
 
-You can join the discord channel [here](https://discord.com/invite/6RSsgfQgcb).
+## Install Dependencies
 
-## Getting Started
-
-To start, clone the codes and install the needed packages using:
+To start, clone the codes and install the required packages using:
 
 `yarn`
 
-If you only want to compile the codes enter the below command:
+## Compile Contracts
 
-`yarn clean`
+If you want to compile the codes enter the below command:
 
-`yarn build`
+`yarn clean` & `yarn build`
 
-You can also run the full test suite with the following command:
+## Run Tests
 
-`yarn test`
-
-
-You can deploy the contracts on specified networks in package.json with the following command:
+You can run the full test suite with the following command:
 
 `yarn test`
 
-After deployments, the contracts need some settlements, do them by the following commands:
+## Deploy Contracts
 
-`yarn settlement:mumbai`
+You can deploy the contracts on networks specified in package.json with the following command:
 
-`yarn collateral_pool_scripts:mumbai`
-
- (with a different private key than the deployer one)
-
-`yarn lockers_settlement:mumbai`
-
-If some contracts has changed, update their addresses in other contracts by the following command:
-
-`yarn global_variables_settlement:mumbai`
+`yarn deploy:network`

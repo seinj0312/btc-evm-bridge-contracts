@@ -1,40 +1,40 @@
-import {HardhatRuntimeEnvironment} from 'hardhat/types';
-import {DeployFunction} from 'hardhat-deploy/types';
-import config from 'config'
-import verify from "../helper-functions"
-import { number } from 'bitcoinjs-lib/src/script';
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import { DeployFunction } from 'hardhat-deploy/types';
+import { BitcoinInterface } from '@teleportdao/bitcoin';
+import config from 'config';
+import verify from "../helper-functions";
 
 var path = require('path');
 var fs = require('fs');
-
 var tempFilePath = path.join(__dirname, '..', '.env');
 
-const {BitcoinRESTAPI} = require('bitcoin_rest_api');
-const {baseURLMainnet} = require('bitcoin_rest_api');
-const {baseURLTestnet} = require('bitcoin_rest_api');
-const {networkMainnet} = require('bitcoin_rest_api');
-const {networkTestnet} = require('bitcoin_rest_api');
-
 const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-    const {deployments, getNamedAccounts, network} = hre;
-    const {deploy} = deployments;
+    const { deployments, getNamedAccounts, network } = hre;
+    const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
 
-    // TODO: check with Sina to use the new bitcoin package
-    let bitcoinRESTAPI;
-    let bitcoinNetwork = config.get("bitcoin_network")
+    let bitcoinNetwork = config.get("bitcoin_network");
+    let tdtToken = config.get("tdt_token");
 
-    if (bitcoinNetwork == "testnet") {
-        bitcoinRESTAPI = new BitcoinRESTAPI(networkTestnet, baseURLTestnet, 2);
-    }
-    if (bitcoinNetwork == "mainnet") {
-        bitcoinRESTAPI = new BitcoinRESTAPI(networkMainnet, baseURLMainnet, 2);
-    }
-     
+    const networkName = bitcoinNetwork == "testnet" ? 'bitcoin' : 'bitcoin_testnet';
+    const _bitcoinNetwork = {
+        name: networkName,
+        connection: {
+            api: {
+                enabled: true,
+                provider: 'BlockStream',
+                token: null,
+            },
+        },
+    };
+    let bitcoinInterface = new BitcoinInterface(
+        _bitcoinNetwork.connection,
+        _bitcoinNetwork.name
+    );
 
     // Deploys BitcoinRelay
     // note: NEVER START WITH 0! IT MAKES PROBLEM
-    let blockCount = await bitcoinRESTAPI.getBlockCount();
+    let blockCount = await bitcoinInterface.getLatestBlockNumber();
     let height;
     if (blockCount > 5) {
         height = blockCount - 5;
@@ -42,14 +42,11 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         height = blockCount;
     }
 
-    let genesisHeader = await bitcoinRESTAPI.getHexBlockHeader(height);
-
-    let periodStartHeight = height - height%2016;
-    let periodStart = await bitcoinRESTAPI.getHexBlockHash(periodStartHeight);
+    let genesisHeader = await bitcoinInterface.getBlockHeaderHex(height);
+    let periodStartHeight = height - height % 2016;
+    let periodStart = await bitcoinInterface.getBlockHash(periodStartHeight);
     periodStart = Buffer.from(periodStart , 'hex').reverse().toString('hex');
-
-    const tdtToken = await deployments.get("ERC20")
-
+    
     var blockHeight = "BLOCK_HEIGHT=" + height + "\n";
     fs.appendFileSync(tempFilePath, blockHeight);
 
@@ -64,7 +61,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
                 '0x' + genesisHeader,
                 height,
                 '0x' + periodStart,
-                tdtToken.address
+                tdtToken
             ],
         });
     } else {
@@ -76,7 +73,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
                 '0x' + genesisHeader,
                 height,
                 '0x' + periodStart,
-                tdtToken.address
+                tdtToken
             ],
         });
     }
@@ -85,11 +82,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
         let theBlockHeight = await process.env.BLOCK_HEIGHT;
         let height = Number(theBlockHeight)
-
-        let genesisHeader = await bitcoinRESTAPI.getHexBlockHeader(height);
-
+        let genesisHeader = await bitcoinInterface.getBlockHeaderHex(height);
         let periodStartHeight = height - height%2016;
-        let periodStart = await bitcoinRESTAPI.getHexBlockHash(periodStartHeight);
+        let periodStart = await bitcoinInterface.getBlockHash(periodStartHeight);
         periodStart = Buffer.from(periodStart , 'hex').reverse().toString('hex');
 
         if (bitcoinNetwork == "mainnet") {
@@ -97,14 +92,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
                 '0x' + genesisHeader,
                 height,
                 '0x' + periodStart,
-                tdtToken.address
+                tdtToken
             ], "contracts/relay/BitcoinRelay.sol:BitcoinRelay")
         } else {
             await verify(deployedContract.address, [
                 '0x' + genesisHeader,
                 height,
                 '0x' + periodStart,
-                tdtToken.address
+                tdtToken
             ], "contracts/relay/BitcoinRelayTestnet.sol:BitcoinRelayTestnet")
         }
         

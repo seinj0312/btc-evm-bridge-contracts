@@ -215,6 +215,19 @@ library BitcoinHelper {
         return _output.indexLEUint(0, 8).toUint64();
     }
 
+    /// @notice                   Finds the value of a specific output
+    /// @dev                      Reverts if vout is null
+    /// @param _vout              The vout of a Bitcoin transaction
+    /// @param _index             Index of output
+    /// @return _value            Value of the specified output
+    function parseOutputValue(bytes memory _vout, uint _index) internal pure returns (uint64 _value) {
+        bytes29 voutView = tryAsVout(_vout.ref(uint40(BTCTypes.Unknown)));
+        require(!voutView.isNull(), "BitcoinHelper: vout is null");
+        bytes29 output;
+        output = indexVout(voutView, _index);
+        _value = value(output);
+    }
+
     /// @notice                   Finds total outputs value
     /// @dev                      Reverts if vout is null
     /// @param _vout              The vout of a Bitcoin transaction
@@ -251,8 +264,12 @@ library BitcoinHelper {
         require(!voutView.isNull(), "BitcoinHelper: vout is null");
         bytes29 output = indexVout(voutView, _voutIndex);
         bytes29 _scriptPubkey = scriptPubkey(output);
-
-        if (_scriptType == ScriptTypes.P2PK) {
+        
+        if (_scriptType == ScriptTypes.P2TR) {
+            // note: first two bytes are OP_1 and Pushdata Bytelength. 
+            // note: script hash length is 32.           
+            bitcoinAmount = keccak256(_script) == keccak256(abi.encodePacked(_scriptPubkey.index(2, 32))) ? value(output) : 0;
+        } else if (_scriptType == ScriptTypes.P2PK) {
             // note: first byte is Pushdata Bytelength. 
             // note: public key length is 32.           
             bitcoinAmount = keccak256(_script) == keccak256(abi.encodePacked(_scriptPubkey.index(1, 32))) ? value(output) : 0;
