@@ -16,7 +16,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     let bitcoinNetwork = config.get("bitcoin_network");
     let tdtToken = config.get("tdt_token");
 
-    const networkName = bitcoinNetwork == "testnet" ? 'bitcoin' : 'bitcoin_testnet';
+    const networkName = bitcoinNetwork == "mainnet" ? 'bitcoin' : 'bitcoin_testnet';
     const _bitcoinNetwork = {
         name: networkName,
         connection: {
