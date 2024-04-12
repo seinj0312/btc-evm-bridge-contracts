@@ -254,6 +254,8 @@ contract BitcoinRelayLogic is IBitcoinRelay, OwnableUpgradeable, ReentrancyGuard
         bytes calldata _anchor, 
         bytes calldata _headers
     ) external nonReentrant whenNotPaused override returns (bool) {
+        require(_msgSender() == TeleportDAOToken, "BitcoinRelay: wrong relayer");
+
         bytes29 _headersView = _headers.ref(0).tryAsHeaderArray();
         bytes29 _anchorView = _anchor.ref(0).tryAsHeader();
 
@@ -273,6 +275,8 @@ contract BitcoinRelayLogic is IBitcoinRelay, OwnableUpgradeable, ReentrancyGuard
         bytes calldata _oldPeriodEndHeader,
         bytes calldata _headers
     ) external nonReentrant whenNotPaused override returns (bool) {
+        require(_msgSender() == TeleportDAOToken, "BitcoinRelay: wrong relayer");
+
         bytes29 _oldStart = _oldPeriodStartHeader.ref(0).tryAsHeader();
         bytes29 _oldEnd = _oldPeriodEndHeader.ref(0).tryAsHeader();
         bytes29 _headersView = _headers.ref(0).tryAsHeaderArray();
@@ -486,11 +490,11 @@ contract BitcoinRelayLogic is IBitcoinRelay, OwnableUpgradeable, ReentrancyGuard
         uint rewardAmountInTNT = submissionGasUsed * chain[_height][0].gasPrice 
             * (ONE_HUNDRED_PERCENT + relayerPercentageFee) / ONE_HUNDRED_PERCENT;
 
-        // Reward in TDT
+        // // Reward in TDT
         uint contractTDTBalance;
-        if (TeleportDAOToken != address(0)) {
-            contractTDTBalance = IERC20(TeleportDAOToken).balanceOf(address(this));
-        }
+        // if (TeleportDAOToken != address(0)) {
+        //     contractTDTBalance = IERC20(TeleportDAOToken).balanceOf(address(this));
+        // }
 
         // Send reward in TDT
         bool sentTDT;
