@@ -9,7 +9,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployments } = hre;
 
     const bitcoinNetwork = config.get("bitcoin_network");
-    const tdtToken = config.get("tdt_token");
+    const finalizationParameter = config.get("finalizationParameter");
+    const relayerPercentageFee = config.get("relayerPercentageFee");
+    const submissionGasUsed = config.get("submissionGasUsed");
+
     const ZERO_ADD = "0x0000000000000000000000000000000000000000";
     let bitcoinRelayLogic;
     let BitcoinRelayLogicFactory;
@@ -67,7 +70,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             '0x' + genesisHeader,
             lastHeight,
             '0x' + periodStart,
-            tdtToken
+            finalizationParameter,
+            relayerPercentageFee,
+            submissionGasUsed
         );
         await initializeTxProxy.wait(1);
         console.log("BitcoinRelayProxy initialized: ", initializeTxProxy.hash);
@@ -84,7 +89,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             '0x' + genesisHeader,
             lastHeight,
             '0x' + periodStart,
-            tdtToken
+            finalizationParameter,
+            relayerPercentageFee,
+            submissionGasUsed
         );
         await initializeTxProxy.wait(1);
         console.log("BitcoinRelayLogic initialized: ", initializeTxProxy.hash);

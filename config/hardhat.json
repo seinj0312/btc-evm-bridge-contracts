@@ -1,5 +1,7 @@
 {
   "proxy_admin": "0x423e64c9c98498E51230B4f7C0EaFd931ED14e7f",
   "bitcoin_network": "testnet",
-  "tdt_token": "0x167d89a98f1e2f0fa908395beea3be66b3c60a0d"
+  "finalizationParameter": 1,
+  "relayerPercentageFee": 500,
+  "submissionGasUsed": 300000
 }
