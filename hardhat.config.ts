@@ -29,32 +29,32 @@ const config: HardhatUserConfig = {
 		mainnet: {
 			url: "https://eth.llamarpc.com",
 			chainId: 1,
-			accounts: [process.env.PRIVATE_KEY ?? ""]
+			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
 		},
 		polygon: {
 			url: "https://polygon-rpc.com",
 			chainId: 137,
-			accounts: [process.env.PRIVATE_KEY ?? ""]
+			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
 		},
 		mumbai: {
 			url: "https://rpc-mumbai.maticvigil.com",
 			chainId: 80001,
-			accounts: [process.env.PRIVATE_KEY ?? ""]
+			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
 		},
 		amoy: {
 			url: "https://polygon-amoy-bor-rpc.publicnode.com",
 			chainId: 80002,
-			accounts: [process.env.PRIVATE_KEY ?? ""]
+			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
 		},
 		bsc: {
 			url: "https://bsc-dataseed.binance.org/",
 			chainId: 56,
-			accounts: [process.env.PRIVATE_KEY ?? ""]
+			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
 		},
 		bsc_testnet: {
 			url: "https://data-seed-prebsc-1-s1.binance.org:8545",
 			chainId: 97,
-			accounts: [process.env.PRIVATE_KEY ?? ""]
+			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
 		},
 	},	
   	paths: {
