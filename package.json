@@ -1,6 +1,6 @@
 {
 	"name": "@teleportdao/btc-evm-bridge",
-	"version": "1.0.3",
+	"version": "1.0.4",
 	"description": "Light client bridge for Bitcoin",
 	"license": "MIT",
 	"scripts": {
