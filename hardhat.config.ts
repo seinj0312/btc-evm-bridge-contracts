@@ -1,5 +1,4 @@
 import * as dotenv from "dotenv";
-
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-waffle";
@@ -16,7 +15,7 @@ const config: HardhatUserConfig = {
 	solidity: {
 		compilers: [
 			{
-				version: "0.8.2",
+				version: "0.8.20",
 				settings: {
 					optimizer: {
 						enabled: true
@@ -29,27 +28,27 @@ const config: HardhatUserConfig = {
 		mainnet: {
 			url: "https://eth.llamarpc.com",
 			chainId: 1,
-			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+			accounts: [process.env.PRIVATE_KEY ?? ""],
 		},
 		polygon: {
 			url: "https://polygon-rpc.com",
 			chainId: 137,
-			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+			accounts: [process.env.PRIVATE_KEY ?? ""],
 		},
 		amoy: {
-			url: "https://rpc-amoy.polygon.technology",
+			url: "https://polygon-amoy-bor-rpc.publicnode.com",
 			chainId: 80002,
-			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+			accounts: [process.env.PRIVATE_KEY ?? ""],
 		},
 		bsc: {
 			url: "https://bsc-dataseed.binance.org/",
 			chainId: 56,
-			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+			accounts: [process.env.PRIVATE_KEY ?? ""],
 		},
 		bsc_testnet: {
 			url: "https://data-seed-prebsc-1-s1.binance.org:8545",
 			chainId: 97,
-			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+			accounts: [process.env.PRIVATE_KEY ?? ""],
 		},
 	},	
   	paths: {

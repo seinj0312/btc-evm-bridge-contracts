@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <=0.8.4;
+pragma solidity ^0.8.0;
 
 import "./BitcoinRelayStorage.sol";
 import "../libraries/TypedMemView.sol";
@@ -88,7 +88,7 @@ contract BitcoinRelayLogic is OwnableUpgradeable, ReentrancyGuardUpgradeable,
     /// @return Block header's hash
     function getBlockHeaderHash(uint _height, uint _index) external view override returns (bytes32) {
         require(
-            !Address.isContract(msg.sender), 
+            _isContract(msg.sender), 
             "BitcoinRelay: addr is contract"
         );
         return chain[_height][_index].selfHash;
@@ -98,7 +98,7 @@ contract BitcoinRelayLogic is OwnableUpgradeable, ReentrancyGuardUpgradeable,
     /// @param  _height of the desired block header
     /// @param  _index of the desired block header in that height
     /// @return Block header submission gas price
-    function getBlockHeaderFee(uint _height, uint _index) external view override returns (uint) {
+    function getBlockHeaderFee(uint _height, uint _index) external virtual view override returns (uint) {
         return _calculateFee(chain[_height][_index].gasPrice);
     }
 
@@ -186,7 +186,7 @@ contract BitcoinRelayLogic is OwnableUpgradeable, ReentrancyGuardUpgradeable,
         uint _blockHeight,
         bytes calldata _intermediateNodes, // In LE form
         uint _index
-    ) external payable nonReentrant whenNotPaused override returns (bool) {
+    ) external virtual payable nonReentrant whenNotPaused override returns (bool) {
         require(_txid != bytes32(0), "BitcoinRelay: txid should be non-zero");
 
         // Revert if the block is not finalized
@@ -231,7 +231,7 @@ contract BitcoinRelayLogic is OwnableUpgradeable, ReentrancyGuardUpgradeable,
     function addHeaders(
         bytes calldata _anchor, 
         bytes calldata _headers
-    ) external nonReentrant whenNotPaused override returns (bool) {
+    ) external virtual nonReentrant whenNotPaused override returns (bool) {
         bytes29 _headersView = _headers.ref(0).tryAsHeaderArray();
         bytes29 _anchorView = _anchor.ref(0).tryAsHeader();
 
@@ -250,7 +250,7 @@ contract BitcoinRelayLogic is OwnableUpgradeable, ReentrancyGuardUpgradeable,
         bytes calldata _oldPeriodStartHeader,
         bytes calldata _oldPeriodEndHeader,
         bytes calldata _headers
-    ) external nonReentrant whenNotPaused override returns (bool) {
+    ) external virtual nonReentrant whenNotPaused override returns (bool) {
         bytes29 _oldStart = _oldPeriodStartHeader.ref(0).tryAsHeader();
         bytes29 _oldEnd = _oldPeriodEndHeader.ref(0).tryAsHeader();
         bytes29 _headersView = _headers.ref(0).tryAsHeaderArray();
@@ -640,5 +640,14 @@ contract BitcoinRelayLogic is OwnableUpgradeable, ReentrancyGuardUpgradeable,
     function _setSubmissionGasUsed(uint _submissionGasUsed) private {
         emit NewSubmissionGasUsed(submissionGasUsed, _submissionGasUsed);
         submissionGasUsed = _submissionGasUsed;
+    }
+
+    /// @notice Check if an address is a contract
+    function _isContract(address _address) internal view returns (bool) {
+        uint256 codeSize;
+        assembly {
+            codeSize := extcodesize(_address)
+        }
+        return codeSize > 0;
     }
 }

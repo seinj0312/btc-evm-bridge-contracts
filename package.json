@@ -7,12 +7,12 @@
 		"build": "rimraf artifacts cache src/types && hardhat compile && tsc",
 		"test": "hardhat test",
 		"deploy": "NODE_ENV=$NETWORK hardhat deploy --network $NETWORK --export export/abi/$NETWORK.json",
-		"init": "NODE_ENV=$NETWORK hardhat deploy --network $NETWORK --export export/abi/$NETWORK.json --deploy-scripts scripts",
+		"config": "NODE_ENV=$NETWORK hardhat deploy --network $NETWORK --export export/abi/$NETWORK.json --deploy-scripts scripts",
 		"prepare": "husky install",
 		"lint": "commitlint --from=HEAD"
 	},
 	"devDependencies": {
-		"@commitlint/cli": "^17.4.4",
+		"@commitlint/cli": "^19.3.0",
 		"@commitlint/config-conventional": "^17.4.4",
 		"@nomicfoundation/hardhat-chai-matchers": "^1.0.5",
 		"@nomiclabs/hardhat-ethers": "^2.0.6",
@@ -35,7 +35,7 @@
 		"eslint-plugin-node": "^11.1.0",
 		"eslint-plugin-prettier": "^3.4.1",
 		"eslint-plugin-promise": "^5.2.0",
-		"ethereum-waffle": "^3.4.4",
+		"ethereum-waffle": "^4.0.10",
 		"ethers": "^5.6.8",
 		"hardhat": "^2.9.9",
 		"hardhat-contract-sizer": "^2.6.1",
@@ -45,15 +45,16 @@
 		"husky": "^8.0.3",
 		"prettier": "^2.6.2",
 		"prettier-plugin-solidity": "^1.0.0-beta.19",
-		"solhint": "^3.3.7",
-		"solidity-coverage": "^0.7.21",
+		"solhint": "^4.5.4",
+		"solidity-coverage": "^0.8.12",
+		"ts-node": "^10.9.2",
 		"typechain": "^5.2.0",
 		"typescript": "^4.7.3"
 	},
 	"dependencies": {
-		"@openzeppelin/contracts": "4.3.3",
-		"@openzeppelin/contracts-upgradeable": "^4.7.3",
-		"@teleportdao/bitcoin": "^1.1.5-alpha.3",
+		"@openzeppelin/contracts": "^5.0.2",
+		"@openzeppelin/contracts-upgradeable": "^4.9.6",
+		"@teleportdao/bitcoin": "^1.7.1",
 		"config": "^3.3.6",
 		"node-color-log": "^11.0.0"
 	}
