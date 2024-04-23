@@ -36,13 +36,8 @@ const config: HardhatUserConfig = {
 			chainId: 137,
 			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
 		},
-		mumbai: {
-			url: "https://rpc-mumbai.maticvigil.com",
-			chainId: 80001,
-			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
-		},
 		amoy: {
-			url: "https://polygon-amoy-bor-rpc.publicnode.com",
+			url: "https://rpc-amoy.polygon.technology",
 			chainId: 80002,
 			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
 		},
@@ -72,7 +67,6 @@ const config: HardhatUserConfig = {
 		},
   	},
   	gasReporter: {
-		// enabled: process.env.REPORT_GAS !== undefined,
 		enabled: true,
 		currency: "USD",
   	},
