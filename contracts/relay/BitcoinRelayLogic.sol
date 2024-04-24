@@ -88,7 +88,7 @@ contract BitcoinRelayLogic is OwnableUpgradeable, ReentrancyGuardUpgradeable,
     /// @return Block header's hash
     function getBlockHeaderHash(uint _height, uint _index) external view override returns (bytes32) {
         require(
-            _isContract(msg.sender), 
+            !_isContract(msg.sender), 
             "BitcoinRelay: addr is contract"
         );
         return chain[_height][_index].selfHash;
