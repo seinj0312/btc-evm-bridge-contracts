@@ -78,6 +78,9 @@ contract BitcoinRelayLogicTestnet is BitcoinRelayLogic {
             blockHeight[_currentHash] = _height;
             lastSubmittedHeight = _height;
             emit BlockAdded(_height, _currentHash, _previousHash, _msgSender());
+            blockHeader memory newBlockHeader;
+            newBlockHeader.selfHash = _currentHash;
+            chain[_height].push(newBlockHeader);
             _previousHash = _currentHash;
         }
         return true;

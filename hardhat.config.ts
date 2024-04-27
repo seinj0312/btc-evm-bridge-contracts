@@ -36,7 +36,7 @@ const config: HardhatUserConfig = {
 			accounts: [process.env.PRIVATE_KEY ?? ""],
 		},
 		amoy: {
-			url: "https://polygon-amoy-bor-rpc.publicnode.com",
+			url: "https://rpc-amoy.polygon.technology",
 			chainId: 80002,
 			accounts: [process.env.PRIVATE_KEY ?? ""],
 		},

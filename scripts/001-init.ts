@@ -61,6 +61,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     let periodStart = await bitcoinInterface.getBlockHash(periodStartHeight);
     periodStart = Buffer.from(periodStart , 'hex').reverse().toString('hex');
 
+    console.log("old: ", "0x", await bitcoinInterface.getBlockHeaderHex(2744380));
+    console.log("new: ", "0x", await bitcoinInterface.getBlockHeaderHex(2744381));
+
     logger.color('blue').log("-------------------------------------------------")
     logger.color('blue').bold().log("Initialize BitcoinRelayProxy ...")
 
