@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.8.4;
+pragma solidity ^0.8.0;
 
+import "./BitcoinRelayStorage.sol";
 import "../libraries/TypedMemView.sol";
 import "../libraries/BitcoinHelper.sol";
-import "./interfaces/IBitcoinRelay.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
@@ -11,49 +11,28 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract BitcoinRelayLogic is IBitcoinRelay, OwnableUpgradeable, ReentrancyGuardUpgradeable, PausableUpgradeable {
+contract BitcoinRelayLogic is OwnableUpgradeable, ReentrancyGuardUpgradeable, 
+        PausableUpgradeable, BitcoinRelayStorage {
 
     using TypedMemView for bytes;
     using TypedMemView for bytes29;
     using BitcoinHelper for bytes29;
     using SafeERC20 for IERC20;
 
-    // Public variables
-    uint constant ONE_HUNDRED_PERCENT = 10000;
-    uint constant MAX_FINALIZATION_PARAMETER = 432; // roughly 3 days
-    uint constant MAX_ALLOWED_GAP = 90 minutes;
-    // ^ This is to prevent the submission of a Bitcoin block header with a timestamp 
-    // that is more than 90 minutes ahead of the network's timestamp. Without this check,
-    // the attacker could manipulate the difficulty target of a new epoch
-
-    uint public override initialHeight;
-    uint public override lastSubmittedHeight;
-    uint public override finalizationParameter;
-    uint public override rewardAmountInTDT;
-    uint public override relayerPercentageFee; // A number between [0, 10000)
-    uint public override submissionGasUsed; // Gas used for submitting a block header
-    uint public override epochLength;
-    uint public override baseQueries;
-    uint public override currentEpochQueries;
-    uint public override lastEpochQueries;
-    address public override TeleportDAOToken;
-    bytes32 public override relayGenesisHash; // Initial block header of relay
-
-    // Private and internal variables
-    mapping(uint => blockHeader[]) private chain; // height => list of block headers
-    mapping(bytes32 => bytes32) internal previousBlock; // block header hash => parent header hash
-    mapping(bytes32 => uint256) internal blockHeight; // block header hash => block height
-
-    /// @notice Gives a starting point for the relay
+    /// @notice Give a starting point for the relay
     /// @param  _genesisHeader The starting header
     /// @param  _height The starting height
     /// @param  _periodStart The hash of the first header in the genesis epoch
-    /// @param  _TeleportDAOToken The address of the TeleportDAO ERC20 token contract
+    /// @param  _finalizationParameter The number of blocks that must be submitted before a block is considered finalized
+    /// @param  _relayerPercentageFee The percentage of the submission gas fee that goes to Relayers
+    /// @param  _submissionGasUsed The gas used by Relayers for submitting a block header
     function initialize(
         bytes memory _genesisHeader,
         uint256 _height,
         bytes32 _periodStart,
-        address _TeleportDAOToken
+        uint256 _finalizationParameter,
+        uint256 _relayerPercentageFee,
+        uint256 _submissionGasUsed
     ) public initializer {
 
         OwnableUpgradeable.__Ownable_init();
@@ -76,17 +55,16 @@ contract BitcoinRelayLogic is IBitcoinRelay, OwnableUpgradeable, ReentrancyGuard
         blockHeight[_periodStart] = _height - (_height % BitcoinHelper.RETARGET_PERIOD_BLOCKS);
 
         // Relay parameters
-        _setFinalizationParameter(3);
+        _setFinalizationParameter(_finalizationParameter);
         initialHeight = _height;
         lastSubmittedHeight = _height;
         
-        _setTeleportDAOToken(_TeleportDAOToken);
-        _setRelayerPercentageFee(500);
+        _setRelayerPercentageFee(_relayerPercentageFee);
         _setEpochLength(BitcoinHelper.RETARGET_PERIOD_BLOCKS);
         _setBaseQueries(epochLength);
         lastEpochQueries = baseQueries;
         currentEpochQueries = 0;
-        _setSubmissionGasUsed(300000); // in wei
+        _setSubmissionGasUsed(_submissionGasUsed); // in wei
     }
 
     function renounceOwnership() public virtual override onlyOwner {}
@@ -110,7 +88,7 @@ contract BitcoinRelayLogic is IBitcoinRelay, OwnableUpgradeable, ReentrancyGuard
     /// @return Block header's hash
     function getBlockHeaderHash(uint _height, uint _index) external view override returns (bytes32) {
         require(
-            !Address.isContract(msg.sender), 
+            !_isContract(msg.sender), 
             "BitcoinRelay: addr is contract"
         );
         return chain[_height][_index].selfHash;
@@ -120,7 +98,7 @@ contract BitcoinRelayLogic is IBitcoinRelay, OwnableUpgradeable, ReentrancyGuard
     /// @param  _height of the desired block header
     /// @param  _index of the desired block header in that height
     /// @return Block header submission gas price
-    function getBlockHeaderFee(uint _height, uint _index) external view override returns (uint) {
+    function getBlockHeaderFee(uint _height, uint _index) external virtual view override returns (uint) {
         return _calculateFee(chain[_height][_index].gasPrice);
     }
 
@@ -208,7 +186,7 @@ contract BitcoinRelayLogic is IBitcoinRelay, OwnableUpgradeable, ReentrancyGuard
         uint _blockHeight,
         bytes calldata _intermediateNodes, // In LE form
         uint _index
-    ) external payable nonReentrant whenNotPaused override returns (bool) {
+    ) external virtual payable nonReentrant whenNotPaused override returns (bool) {
         require(_txid != bytes32(0), "BitcoinRelay: txid should be non-zero");
 
         // Revert if the block is not finalized
@@ -253,9 +231,7 @@ contract BitcoinRelayLogic is IBitcoinRelay, OwnableUpgradeable, ReentrancyGuard
     function addHeaders(
         bytes calldata _anchor, 
         bytes calldata _headers
-    ) external nonReentrant whenNotPaused override returns (bool) {
-        require(_msgSender() == TeleportDAOToken, "BitcoinRelay: wrong relayer");
-
+    ) external virtual nonReentrant whenNotPaused override returns (bool) {
         bytes29 _headersView = _headers.ref(0).tryAsHeaderArray();
         bytes29 _anchorView = _anchor.ref(0).tryAsHeader();
 
@@ -274,9 +250,7 @@ contract BitcoinRelayLogic is IBitcoinRelay, OwnableUpgradeable, ReentrancyGuard
         bytes calldata _oldPeriodStartHeader,
         bytes calldata _oldPeriodEndHeader,
         bytes calldata _headers
-    ) external nonReentrant whenNotPaused override returns (bool) {
-        require(_msgSender() == TeleportDAOToken, "BitcoinRelay: wrong relayer");
-
+    ) external virtual nonReentrant whenNotPaused override returns (bool) {
         bytes29 _oldStart = _oldPeriodStartHeader.ref(0).tryAsHeader();
         bytes29 _oldEnd = _oldPeriodEndHeader.ref(0).tryAsHeader();
         bytes29 _headersView = _headers.ref(0).tryAsHeaderArray();
@@ -490,16 +464,15 @@ contract BitcoinRelayLogic is IBitcoinRelay, OwnableUpgradeable, ReentrancyGuard
         uint rewardAmountInTNT = submissionGasUsed * chain[_height][0].gasPrice 
             * (ONE_HUNDRED_PERCENT + relayerPercentageFee) / ONE_HUNDRED_PERCENT;
 
-        // // Reward in TDT
+        // Reward in TDT
         uint contractTDTBalance;
-        // if (TeleportDAOToken != address(0)) {
-        //     contractTDTBalance = IERC20(TeleportDAOToken).balanceOf(address(this));
-        // }
+        if (TeleportDAOToken != address(0)) {
+            contractTDTBalance = IERC20(TeleportDAOToken).balanceOf(address(this));
+        }
 
         // Send reward in TDT
         bool sentTDT;
         if (rewardAmountInTDT <= contractTDTBalance && rewardAmountInTDT > 0) {
-            // Call ERC20 token contract to transfer reward tokens to the relayer
             IERC20(TeleportDAOToken).safeTransfer(_relayer, rewardAmountInTDT);
             sentTDT = true;
         }
@@ -667,5 +640,14 @@ contract BitcoinRelayLogic is IBitcoinRelay, OwnableUpgradeable, ReentrancyGuard
     function _setSubmissionGasUsed(uint _submissionGasUsed) private {
         emit NewSubmissionGasUsed(submissionGasUsed, _submissionGasUsed);
         submissionGasUsed = _submissionGasUsed;
+    }
+
+    /// @notice Check if an address is a contract
+    function _isContract(address _address) internal view returns (bool) {
+        uint256 codeSize;
+        assembly {
+            codeSize := extcodesize(_address)
+        }
+        return codeSize > 0;
     }
 }

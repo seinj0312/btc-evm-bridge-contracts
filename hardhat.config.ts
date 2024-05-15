@@ -1,7 +1,5 @@
 import * as dotenv from "dotenv";
-
-import { task, HardhatUserConfig} from "hardhat/config";
-import { HttpNetworkUserConfig } from "hardhat/types";
+import { HardhatUserConfig } from "hardhat/config";
 import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-waffle";
 import "@typechain/hardhat";
@@ -13,58 +11,11 @@ import "hardhat-contract-sizer";
 
 dotenv.config();
 
-const infuraNetwork = (
-	accounts: any, 
-	network: string,
-	chainId?: number,
-	gas?: number
-): HttpNetworkUserConfig => {
-	return {
-		url: `https://${network}.infura.io/v3/${process.env.PROJECT_ID}`,
-		chainId,
-		gas,
-		accounts,
-		gasPrice: 200000000000,
-	}
-}
-
 const config: HardhatUserConfig = {
 	solidity: {
 		compilers: [
 			{
-				version: "0.5.16",
-				settings: {
-					optimizer: {
-						enabled: true
-					},
-				},
-			},
-			{
-				version: "0.6.6",
-				settings: {
-					optimizer: {
-						enabled: true
-					},
-				},
-			},
-			{
-				version: "0.7.6",
-				settings: {
-					optimizer: {
-						enabled: true
-					},
-				},
-			},
-			{
-				version: "0.8.0",
-				settings: {
-					optimizer: {
-						enabled: true
-					},
-				},
-			},
-			{
-				version: "0.8.2",
+				version: "0.8.20",
 				settings: {
 					optimizer: {
 						enabled: true
@@ -74,38 +25,30 @@ const config: HardhatUserConfig = {
 		],
 	},
 	networks: {
-		mainnet: infuraNetwork(
-			process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [], 
-			"mainnet", 
-			1, 
-			6283185,
-		),
-		goerli: infuraNetwork(
-			process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [], 
-			"goerli", 
-			5, 
-			6283185
-		),
+		mainnet: {
+			url: "https://eth.llamarpc.com",
+			chainId: 1,
+			accounts: [process.env.PRIVATE_KEY ?? ""],
+		},
 		polygon: {
 			url: "https://polygon-rpc.com",
 			chainId: 137,
-			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
-			gasPrice: 400000000000 
+			accounts: [process.env.PRIVATE_KEY ?? ""],
 		},
-		mumbai: {
-			url: "https://rpc-mumbai.maticvigil.com",
-			chainId: 80001,
-			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+		amoy: {
+			url: "https://rpc-amoy.polygon.technology",
+			chainId: 80002,
+			accounts: [process.env.PRIVATE_KEY ?? ""],
 		},
 		bsc: {
 			url: "https://bsc-dataseed.binance.org/",
 			chainId: 56,
-			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+			accounts: [process.env.PRIVATE_KEY ?? ""],
 		},
 		bsc_testnet: {
 			url: "https://data-seed-prebsc-1-s1.binance.org:8545",
 			chainId: 97,
-			accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+			accounts: [process.env.PRIVATE_KEY ?? ""],
 		},
 	},	
   	paths: {
@@ -123,7 +66,6 @@ const config: HardhatUserConfig = {
 		},
   	},
   	gasReporter: {
-		// enabled: process.env.REPORT_GAS !== undefined,
 		enabled: true,
 		currency: "USD",
   	},

@@ -7,7 +7,7 @@ const REGULAR_CHAIN = require('./test_fixtures/headers.json');
 const RETARGET_CHAIN = require('./test_fixtures/headersWithRetarget.json');
 const REORG_AND_RETARGET_CHAIN = require('./test_fixtures/headersReorgAndRetarget.json');
 
-import { assert, expect, use } from "chai";
+import { expect } from "chai";
 const fs = require('fs');
 var path = require('path');
 var jsonPath = path.join(__dirname, './test_fixtures', 'testBlockHeaders.json');
@@ -16,7 +16,7 @@ require('dotenv').config({path:"../../.env"});
 import { deployments, ethers } from "hardhat";
 import { Signer, BigNumber } from "ethers";
 import { BitcoinRelay } from "../src/types/BitcoinRelay";
-import {BitcoinRelay__factory } from "../src/types/factories/BitcoinRelay__factory";
+import { BitcoinRelay__factory } from "../src/types/factories/BitcoinRelay__factory";
 import { deployMockContract, MockContract } from "@ethereum-waffle/mock-contract";
 import { takeSnapshot, revertProvider } from "./block_utils";
 import { BitcoinInterface } from '@teleportdao/bitcoin';
@@ -108,12 +108,17 @@ describe("Bitcoin Relay", async () => {
         let _periodStart = await bitcoinInterface.getBlockHash(_height - (_height % 2016));
         _genesisHeader = '0x' + _genesisHeader;
         _periodStart = '0x' + revertBytes32(_periodStart);
+        let _finalizationParameter = 3;
+        let _relayerPercentageFee = 500;
+        let _submissionGasUsed = 300000;
 
         const bitcoinRelay = await bitcoinRelayFactory.deploy(
             _genesisHeader,
             _heightBigNumber,
             _periodStart,
-            ZERO_ADDRESS
+            _finalizationParameter,
+            _relayerPercentageFee,
+            _submissionGasUsed
         );
 
         return bitcoinRelay;
@@ -132,12 +137,17 @@ describe("Bitcoin Relay", async () => {
         let _heightBigNumber = BigNumber.from(_genesisHeight)
         _genesisHeader = '0x' + _genesisHeader;
         _periodStart = '0x' + revertBytes32(_periodStart);
+        let _finalizationParameter = 3;
+        let _relayerPercentageFee = 500;
+        let _submissionGasUsed = 300000;
 
         const bitcoinRelayTest = await bitcoinRelayFactory.deploy(
             _genesisHeader,
             _heightBigNumber,
             _periodStart,
-            ZERO_ADDRESS
+            _finalizationParameter,
+            _relayerPercentageFee,
+            _submissionGasUsed
         );
 
         return bitcoinRelayTest;
