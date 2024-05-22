@@ -1,13 +1,12 @@
 import * as dotenv from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
-import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-waffle";
 import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
 import "hardhat-deploy";
-import "hardhat-deploy-tenderly";
 import "hardhat-contract-sizer";
+import "@nomicfoundation/hardhat-verify";
 
 dotenv.config();
 
@@ -25,9 +24,9 @@ const config: HardhatUserConfig = {
 		],
 	},
 	networks: {
-		mainnet: {
-			url: "https://eth.llamarpc.com",
-			chainId: 1,
+		bsquared: {
+			url: "https://rpc.bsquared.network",
+			chainId: 223,
 			accounts: [process.env.PRIVATE_KEY ?? ""],
 		},
 		polygon: {
@@ -43,11 +42,6 @@ const config: HardhatUserConfig = {
 		bsc: {
 			url: "https://bsc-dataseed.binance.org/",
 			chainId: 56,
-			accounts: [process.env.PRIVATE_KEY ?? ""],
-		},
-		bsc_testnet: {
-			url: "https://data-seed-prebsc-1-s1.binance.org:8545",
-			chainId: 97,
 			accounts: [process.env.PRIVATE_KEY ?? ""],
 		},
 	},	
@@ -70,7 +64,46 @@ const config: HardhatUserConfig = {
 		currency: "USD",
   	},
   	etherscan: {
-		apiKey: process.env.ETHERSCAN_API_KEY,
+		apiKey: {
+			bsquared: process.env.ETHERSCAN_API_KEY??"",
+    		polygon: process.env.ETHERSCAN_API_KEY??"",
+			bsc: process.env.ETHERSCAN_API_KEY??"",
+			amoy: process.env.ETHERSCAN_API_KEY??""
+  		},
+		customChains: [
+			{
+				network: "bsquared",
+				chainId: 223,
+				urls: {
+					apiURL: "https://explorer.bsquared.network/api",
+					browserURL: "https://explorer.bsquared.network"
+				}
+			},
+			{
+				network: "polygon",
+				chainId: 137,
+				urls: {
+					apiURL: "https://api.polygonscan.com/api",
+					browserURL: "https://polygonscan.com/"
+				}
+			},
+			{
+				network: "bsc",
+				chainId: 56,
+				urls: {
+					apiURL: "https://api.bscscan.com/api",
+					browserURL: "https://bscscan.com/"
+				}
+			},
+			{
+				network: "amoy",
+				chainId: 80002,
+				urls: {
+					apiURL: "https://api-amoy.polygonscan.com/api",
+					browserURL: "https://amoy.polygonscan.com/"
+				}
+			}
+		]
   	},
 };
 

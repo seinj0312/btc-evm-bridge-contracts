@@ -27,3 +27,5 @@ build
 vendor
 
 yarn-error.log
+
+zk-bridge
