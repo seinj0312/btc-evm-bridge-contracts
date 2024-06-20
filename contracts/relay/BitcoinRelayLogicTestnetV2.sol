@@ -5,16 +5,18 @@ import "./BitcoinRelayLogic.sol";
 import "../libraries/TypedMemView.sol";
 import "../libraries/BitcoinHelper.sol";
 
-contract BitcoinRelayLogicTestnet is BitcoinRelayLogic {
+contract BitcoinRelayLogicTestnetV2 is BitcoinRelayLogic {
     using TypedMemView for bytes;
     using TypedMemView for bytes29;
     using BitcoinHelper for bytes29;
 
     /// @notice Always return 1 in testnet
-    function getBlockHeaderFee(
-        uint256,
-        uint256
-    ) external view override returns (uint256) {
+    function getBlockHeaderFee(uint256, uint256)
+        external
+        view
+        override
+        returns (uint256)
+    {
         return 1;
     }
 
@@ -31,19 +33,22 @@ contract BitcoinRelayLogicTestnet is BitcoinRelayLogic {
         return true;
     }
 
-    /// @notice Add header to storage
-    /// @dev Some checks have been removed for testnet
-    function addHeaders(
-        bytes calldata _anchor,
-        bytes calldata _headers
-    ) external override nonReentrant whenNotPaused returns (bool) {
+    /// @notice Adds header to storage
+    /// @dev Many checks have been removed for testnet
+    function addHeaders(bytes calldata _anchor, bytes calldata _headers)
+        external
+        override
+        nonReentrant
+        whenNotPaused
+        returns (bool)
+    {
         bytes29 _headersView = _headers.ref(0).tryAsHeaderArray();
         bytes29 _anchorView = _anchor.ref(0).tryAsHeader();
         return _addHeaders(_anchorView, _headersView, false);
     }
 
     /// @notice Add headers to storage
-    /// @dev Same as addHeaders (no retargeting check in testnet)
+    /// @dev Same as addHeaders (no retargeting checks in testnet)
     function addHeadersWithRetarget(
         bytes calldata _oldPeriodStartHeader,
         bytes calldata _oldPeriodEndHeader,
@@ -70,22 +75,12 @@ contract BitcoinRelayLogicTestnet is BitcoinRelayLogic {
             bytes29 _header = _headers.indexHeaderArray(i);
             _height = _anchorHeight + i + 1;
             _currentHash = _header.hash256();
-
-            // The below check prevents adding a replicated block header
-            require(
-                previousBlock[_currentHash] == bytes32(0),
-                "BitcoinRelay: the block header exists on the relay"
-            );
-
-            require(
-                _header.checkParent(_previousHash),
-                "BitcoinRelay: headers do not form a consistent chain"
-            );
-
-            previousBlock[_currentHash] = _previousHash;
             blockHeight[_currentHash] = _height;
+            lastSubmittedHeight = _height;
             emit BlockAdded(_height, _currentHash, _previousHash, _msgSender());
-            _addToChain(_header, _height);
+            blockHeader memory newBlockHeader;
+            newBlockHeader.selfHash = _currentHash;
+            chain[_height].push(newBlockHeader);
             _previousHash = _currentHash;
         }
         return true;
